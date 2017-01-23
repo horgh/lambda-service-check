@@ -28,13 +28,18 @@
 
 "use strict";
 
+const dns = require('dns');
+const net = require('net');
+const tls = require('tls');
+const AWS = require('aws-sdk');
+
 // Settings begin here.
 
 // Hostname to monitor. It should have A record(s).
-const HOSTNAME = 'irc.summercat.com';
+const HOSTNAME = '';
 
 // Port to connect to on each IP.
-const PORT = 7000;
+const PORT = 6667;
 
 // Check validity of TLS certificates or not.
 const CHECK_CERTIFICATES = false;
@@ -48,11 +53,13 @@ const GREETING = 'NOTICE AUTH';
 // Whether to log verbosely (such as successes).
 const VERBOSE = true;
 
-// End settings section.
+// AWS options. Note for Lambda functions we do not need to set credentials.
+AWS.config.region = 'us-west-2';
 
-const dns = require('dns');
-const net = require('net');
-const tls = require('tls');
+// SNS ARN to publish to.
+const SNS_ARN = '';
+
+// End settings section.
 
 // Track IPs we received the correct greeting from.
 const IPS_WITH_GREETING = [];
@@ -63,7 +70,7 @@ const HOSTS_REPORTED = [];
 // Report that the service is down.
 //
 // id may be a hostname or an IP. why is a reason to include.
-const service_is_down = function(id, why) {
+const service_is_down = function(sns_arn, id, why) {
 	for (var i = 0; i < HOSTS_REPORTED.length; i++) {
 		if (HOSTS_REPORTED[i] === id) {
 			return;
@@ -72,12 +79,28 @@ const service_is_down = function(id, why) {
 
 	HOSTS_REPORTED.push(id);
 
+	const msg = id + ": " + why.trim();
+
+	const sns = new AWS.SNS();
+	sns.publish(
+		{
+			'Message':  msg,
+			'TopicArn': sns_arn,
+		},
+		function(err, data) {
+			if (err) {
+				console.log(err);
+				return;
+			}
+		}
+	);
+
 	console.log(id + ": " + why.trim());
 };
 
 // Connect to the IP and check its liveliness.
 const check_ip = function(ip, port, check_certificates, timeout, greeting,
-	verbose) {
+	verbose, sns_arn) {
 	const client = net.createConnection({
 		'host': ip,
 		'port': port,
@@ -93,29 +116,29 @@ const check_ip = function(ip, port, check_certificates, timeout, greeting,
 		});
 
 		if (index === -1) {
-			service_is_down(ip, "greeting not found");
+			service_is_down(sns_arn, ip, "greeting not found");
 		}
 	});
 
 	client.on('connect', function() {
 		connect_tls_and_get_greeting(ip, client, check_certificates, greeting,
-			verbose);
+			verbose, sns_arn);
 	});
 
 	client.on('error', function(err) {
-		service_is_down(ip, "error: " + err.message);
+		service_is_down(sns_arn, ip, "error: " + err.message);
 		client.destroy();
 	});
 
 	client.on('timeout', function() {
-		service_is_down(ip, "timeout");
+		service_is_down(sns_arn, ip, "timeout");
 		client.destroy();
 	});
 };
 
 // Setup a TLS session on the given socket. Try to retrieve the greeting.
 const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
-	greeting, verbose) {
+	greeting, verbose, sns_arn) {
 	const client = tls.connect({
 		'socket':             socket,
 		'rejectUnauthorized': check_certificates
@@ -146,19 +169,19 @@ const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
 			return;
 		}
 
-		service_is_down(ip, "unexpected greeting");
+		service_is_down(sns_arn, ip, "unexpected greeting");
 		socket.end();
 	});
 
 	client.on('error', function(err) {
-		service_is_down(ip, "TLS error: " + err.message);
+		service_is_down(sns_arn, ip, "TLS error: " + err.message);
 		socket.end();
 	});
 };
 
 // Run checks on the configured hostname.
 const check_host = function(hostname, port, check_certificates, timeout,
-	greeting, verbose) {
+	greeting, verbose, sns_arn) {
 	dns.lookup(hostname,
 	 	{
 			'family': 4,
@@ -166,7 +189,7 @@ const check_host = function(hostname, port, check_certificates, timeout,
 		},
 	 	function(err, ips, family) {
 			if (err) {
-				service_is_down(hostname, "DNS error: " + err.code);
+				service_is_down(sns_arn, hostname, "DNS error: " + err.code);
 				return;
 			}
 
@@ -174,10 +197,12 @@ const check_host = function(hostname, port, check_certificates, timeout,
 
 			for (var i = 0; i < ips.length; i++) {
 				const ip = ips[i].address;
-				check_ip(ip, port, check_certificates, timeout, greeting, verbose);
+				check_ip(ip, port, check_certificates, timeout, greeting, verbose,
+					sns_arn);
 			}
 		}
 	);
 };
 
-check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE);
+check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
+	SNS_ARN);
