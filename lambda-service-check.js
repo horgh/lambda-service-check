@@ -60,7 +60,7 @@ const service_is_down = function(sns_arn, id, why) {
 	sns.publish(
 		{
 			'Message':  msg,
-			'TopicArn': sns_arn,
+			'TopicArn': sns_arn
 		},
 		function(err, data) {
 			if (err) {
@@ -77,9 +77,9 @@ const service_is_down = function(sns_arn, id, why) {
 const check_ip = function(ip, port, check_certificates, timeout, greeting,
 	verbose, sns_arn) {
 	const client = net.createConnection({
-		'host': ip,
-		'port': port,
-		'rejectUnauthorized': check_certificates,
+		'host':               ip,
+		'port':               port,
+		'rejectUnauthorized': check_certificates
 	});
 
 	client.setTimeout(timeout);
