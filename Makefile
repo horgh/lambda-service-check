@@ -5,7 +5,7 @@ clean:
 
 package.zip: build lambda-service-check.js
 	rm -f build/*
-	cp lambda-service-check.js build
+	cp lambda-service-check.js config.js build
 	(cd build && zip -r ../package.zip .)
 
 build:

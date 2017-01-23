@@ -32,38 +32,9 @@ const dns = require('dns');
 const net = require('net');
 const tls = require('tls');
 const AWS = require('aws-sdk');
+const config = require('./config.js');
 
-// Settings begin here.
-
-// Hostname to monitor. It should have A record(s).
-const HOSTNAME = '';
-
-// Port to connect to on each IP.
-const PORT = 6667;
-
-// Check validity of TLS certificates or not.
-const CHECK_CERTIFICATES = false;
-
-// Timeout on connections (connect, idle time) (milliseconds)
-const TIMEOUT = 10000;
-
-// Greeting to look for.
-const GREETING = 'NOTICE AUTH';
-
-// Whether to log verbosely (such as successes).
-const VERBOSE = false;
-
-// AWS options. Note for Lambda functions we do not need to set credentials.
-AWS.config.region = 'us-west-2';
-
-// SNS ARN to publish to.
-const SNS_ARN = '';
-
-// Whether to run the handler rather than export it. If you are testing or
-// working on this program outside Lambda, set this true.
-const RUN_LOCALLY = false;
-
-// End settings section.
+AWS.config.region = config.aws_region;
 
 // Track IPs we received the correct greeting from.
 const IPS_WITH_GREETING = [];
@@ -210,11 +181,11 @@ const check_host = function(hostname, port, check_certificates, timeout,
 
 // Lambda handler function.
 exports.handler = function(event, context, callback) {
-	check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
-		SNS_ARN);
+	check_host(config.hostname, config.port, config.check_certificates,
+		config.timeout, config.greeting, config.verbose, config.sns_arn);
 };
 
-if (RUN_LOCALLY) {
-	check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
-		SNS_ARN);
+if (config.run_locally) {
+	check_host(config.hostname, config.port, config.check_certificates,
+		config.timeout, config.greeting, config.verbose, config.sns_arn);
 }

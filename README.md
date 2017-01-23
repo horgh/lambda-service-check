@@ -7,19 +7,23 @@ You give it a hostname and a port, and it attempts to connect to each IP
 associated with the hostname. It establishes a TLS session and looks for the
 greeting you define. If any of this fails, it reports the host/IP as down.
 
+I wrote it to monitor for IRC server outages. In theory it will be usable for
+any TLS-supporting service that sends a greeting to clients.
+
 
 # Setup
-  * Create AWS account, an SNS topic (get its ARN), and an [execution
+  * Create an AWS account, an SNS topic (get its ARN), and an [execution
     role](http://docs.aws.amazon.com/lambda/latest/dg/with-sns-example-create-iam-role.html
     (get its ARN).
-  * Execution role should have these policies:
+  * The Execution role should have these policies:
     * AWSLambdaBasicExecutionRole (to be able to log)
-    * AmazonSNSFullAccess (to be able to publish to SNS)
-  * Update the settings in `lambda-service-check.js`. There is a section at the
-    top.
-  * Make deployment package zip file: `make`.
+    * AmazonSNSFullAccess (to be able to publish to SNS) (you can be more fine
+      grained than this policy, such as restricting to publishing only to a
+      specific resource).
+  * Copy `config.js.sample` to `config.js` and update the settings.
+  * Make the deployment package zip file: `make`.
   * Create Lambda. You can do this in the AWS management console.
-    * Blank function works if you are using the web interface.
+    * Select blank function (custom).
     * Make the trigger a CloudWatch Events - Schedule trigger.
     * Choose runtime Node.js 4.3
     * Set handler to `lambda-service-check.handler`.

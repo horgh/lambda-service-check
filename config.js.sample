@@ -1,0 +1,29 @@
+module.exports = {
+  // Hostname to monitor. It should have A record(s).
+  hostname: 'irc.example.com',
+
+  // Port to connect to on each IP.
+  port: 6667,
+
+  // Check validity of TLS certificates or not.
+  check_certificates: false,
+
+  // Timeout on connections (connect, idle time) (milliseconds)
+  timeout: 10000,
+
+  // Greeting to look for.
+  greeting: 'NOTICE AUTH',
+
+  // Whether to log verbosely (such as successes).
+  verbose: false,
+
+  // AWS options. Note for Lambda functions we do not need to set credentials.
+  aws_region: 'us-west-2',
+
+  // SNS ARN to publish to.
+  sns_arn: 'arn:aws:sns:',
+
+  // Whether to run the handler rather than export it. If you are testing or
+  // working on this program outside Lambda, set this true.
+  run_locally: false
+};
