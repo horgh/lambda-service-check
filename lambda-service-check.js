@@ -46,7 +46,10 @@ const dns = require('dns');
 const net = require('net');
 const tls = require('tls');
 
-// Track hosts we report errors on. This is so we do so only once.
+// Track IPs we received the correct greeting from.
+const ips_with_greeting = [];
+
+// Track hosts/IPs we reported errors on. This is so we do so only once.
 const hosts_reported = [];
 
 // Report that the service is down.
@@ -74,45 +77,19 @@ const check_ip = function(ip) {
 
 	client.setTimeout(timeout);
 
-	var got_greeting = false;
-	var reported_error = false;
-
 	client.on('close', function() {
-		if (!got_greeting) {
+		// Report it's down unless we saw the greeting.
+		const index = ips_with_greeting.findIndex(function(e) {
+			return e === ip;
+		});
+
+		if (index === -1) {
 			service_is_down(ip, "greeting not found");
 		}
 	});
 
 	client.on('connect', function() {
-		const sec_client = tls.connect({
-			'socket': client,
-			'rejectUnauthorized': check_certificates
-	 	});
-
-		var buf = new Buffer(0);
-
-		sec_client.on('data', function(data) {
-			if (buf.length >= greeting.length) {
-				return;
-			}
-
-			buf = Buffer.concat([buf, data]);
-			if (buf.length < greeting.length) {
-				return;
-			}
-
-			if (buf.toString().substr(0, greeting.length) === greeting) {
-				got_greeting = true;
-				if (verbose) {
-					console.log(ip + ": received greeting");
-				}
-				client.end();
-				return;
-			}
-
-			service_is_down(ip, "unexpected greeting");
-			client.end();
-		});
+		connect_tls_and_get_greeting(ip, client);
 	});
 
 	client.on('error', function(err) {
@@ -123,6 +100,43 @@ const check_ip = function(ip) {
 	client.on('timeout', function() {
 		service_is_down(ip, "timeout");
 		client.destroy();
+	});
+};
+
+// Setup a TLS session on the given socket. Try to retrieve the greeting.
+const connect_tls_and_get_greeting = function(ip, socket) {
+	const client = tls.connect({
+		'socket':             socket,
+		'rejectUnauthorized': check_certificates
+	});
+
+	var buf = new Buffer(0);
+
+	client.on('data', function(data) {
+		// If we've seen enough to know whether greeting is present then there is
+		// nothing more to do.
+		if (buf.length >= greeting.length) {
+			return;
+		}
+
+		buf = Buffer.concat([buf, data]);
+		if (buf.length < greeting.length) {
+			return;
+		}
+
+		if (buf.toString().substr(0, greeting.length) === greeting) {
+			ips_with_greeting.push(ip);
+
+			if (verbose) {
+				console.log(ip + ": received greeting");
+			}
+
+			client.end();
+			return;
+		}
+
+		service_is_down(ip, "unexpected greeting");
+		socket.end();
 	});
 };
 
