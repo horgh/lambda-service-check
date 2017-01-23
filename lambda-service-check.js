@@ -22,23 +22,25 @@
 
 "use strict";
 
+// Settings begin here.
+
 // Hostname to monitor. It should have A record(s).
-const hostname = 'irc.summercat.com';
+const HOSTNAME = 'irc.summercat.com';
 
 // Port to connect to on each IP.
-const port = 7000;
+const PORT = 7000;
 
 // Check validity of TLS certificates or not.
-const check_certificates = false;
+const CHECK_CERTIFICATES = false;
 
 // Timeout on connections (connect, idle time) (milliseconds)
-const timeout = 10000;
+const TIMEOUT = 10000;
 
 // Greeting to look for.
-const greeting = 'NOTICE AUTH';
+const GREETING = 'NOTICE AUTH';
 
 // Whether to log verbosely (such as successes).
-const verbose = true;
+const VERBOSE = true;
 
 // End settings section.
 
@@ -47,28 +49,29 @@ const net = require('net');
 const tls = require('tls');
 
 // Track IPs we received the correct greeting from.
-const ips_with_greeting = [];
+const IPS_WITH_GREETING = [];
 
 // Track hosts/IPs we reported errors on. This is so we do so only once.
-const hosts_reported = [];
+const HOSTS_REPORTED = [];
 
 // Report that the service is down.
 //
 // id may be a hostname or an IP. why is a reason to include.
 const service_is_down = function(id, why) {
-	for (var i = 0; i < hosts_reported.length; i++) {
-		if (hosts_reported[i] === id) {
+	for (var i = 0; i < HOSTS_REPORTED.length; i++) {
+		if (HOSTS_REPORTED[i] === id) {
 			return;
 		}
 	}
 
-	hosts_reported.push(id);
+	HOSTS_REPORTED.push(id);
 
 	console.log(id + ": " + why);
 };
 
 // Connect to the IP and check its liveliness.
-const check_ip = function(ip) {
+const check_ip = function(ip, port, check_certificates, timeout, greeting,
+	verbose) {
 	const client = net.createConnection({
 		'host': ip,
 		'port': port,
@@ -79,7 +82,7 @@ const check_ip = function(ip) {
 
 	client.on('close', function() {
 		// Report it's down unless we saw the greeting.
-		const index = ips_with_greeting.findIndex(function(e) {
+		const index = IPS_WITH_GREETING.findIndex(function(e) {
 			return e === ip;
 		});
 
@@ -89,7 +92,8 @@ const check_ip = function(ip) {
 	});
 
 	client.on('connect', function() {
-		connect_tls_and_get_greeting(ip, client);
+		connect_tls_and_get_greeting(ip, client, check_certificates, greeting,
+			verbose);
 	});
 
 	client.on('error', function(err) {
@@ -104,7 +108,8 @@ const check_ip = function(ip) {
 };
 
 // Setup a TLS session on the given socket. Try to retrieve the greeting.
-const connect_tls_and_get_greeting = function(ip, socket) {
+const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
+	greeting, verbose) {
 	const client = tls.connect({
 		'socket':             socket,
 		'rejectUnauthorized': check_certificates
@@ -125,7 +130,7 @@ const connect_tls_and_get_greeting = function(ip, socket) {
 		}
 
 		if (buf.toString().substr(0, greeting.length) === greeting) {
-			ips_with_greeting.push(ip);
+			IPS_WITH_GREETING.push(ip);
 
 			if (verbose) {
 				console.log(ip + ": received greeting");
@@ -141,11 +146,12 @@ const connect_tls_and_get_greeting = function(ip, socket) {
 };
 
 // Run checks on the configured hostname.
-const check_host = function() {
+const check_host = function(hostname, port, check_certificates, timeout,
+	greeting, verbose) {
 	dns.lookup(hostname,
 	 	{
 			'family': 4,
-			'all': true
+			'all':    true
 		},
 	 	function(err, ips, family) {
 			if (err) {
@@ -154,12 +160,13 @@ const check_host = function() {
 			}
 
 			// ips is an array of objects, each with property address and family.
+
 			for (var i = 0; i < ips.length; i++) {
 				const ip = ips[i].address;
-				check_ip(ip);
+				check_ip(ip, port, check_certificates, timeout, greeting, verbose);
 			}
 		}
 	);
 };
 
-check_host();
+check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE);
