@@ -51,13 +51,17 @@ const TIMEOUT = 10000;
 const GREETING = 'NOTICE AUTH';
 
 // Whether to log verbosely (such as successes).
-const VERBOSE = true;
+const VERBOSE = false;
 
 // AWS options. Note for Lambda functions we do not need to set credentials.
 AWS.config.region = 'us-west-2';
 
 // SNS ARN to publish to.
 const SNS_ARN = '';
+
+// Whether to run the handler rather than export it. If you are testing or
+// working on this program outside Lambda, set this true.
+const RUN_LOCALLY = false;
 
 // End settings section.
 
@@ -95,7 +99,7 @@ const service_is_down = function(sns_arn, id, why) {
 		}
 	);
 
-	console.log(id + ": " + why.trim());
+	console.log(msg);
 };
 
 // Connect to the IP and check its liveliness.
@@ -204,5 +208,13 @@ const check_host = function(hostname, port, check_certificates, timeout,
 	);
 };
 
-check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
-	SNS_ARN);
+// Lambda handler function.
+exports.handler = function(event, context, callback) {
+	check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
+		SNS_ARN);
+};
+
+if (RUN_LOCALLY) {
+	check_host(HOSTNAME, PORT, CHECK_CERTIFICATES, TIMEOUT, GREETING, VERBOSE,
+		SNS_ARN);
+}
