@@ -16,6 +16,12 @@
 // server was up and apparently fine, but it was not able to accept
 // connections. This program is to monitor for such cases.
 //
+// Tests:
+// - Self signed certificate and certificate checks enabled.
+// - Open port without TLS.
+// - Timeout.
+// - Port open but nothing running.
+//
 
 /* jshint node: true */
 /* jshint esversion: 6 */
@@ -66,7 +72,7 @@ const service_is_down = function(id, why) {
 
 	HOSTS_REPORTED.push(id);
 
-	console.log(id + ": " + why);
+	console.log(id + ": " + why.trim());
 };
 
 // Connect to the IP and check its liveliness.
@@ -141,6 +147,11 @@ const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
 		}
 
 		service_is_down(ip, "unexpected greeting");
+		socket.end();
+	});
+
+	client.on('error', function(err) {
+		service_is_down(ip, "TLS error: " + err.message);
 		socket.end();
 	});
 };
