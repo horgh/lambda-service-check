@@ -25,13 +25,13 @@
 // Hostname to monitor. It should have A record(s).
 const hostname = 'irc.summercat.com';
 
-// Port to connect to on each server.
+// Port to connect to on each IP.
 const port = 7000;
 
-// Check certificates.
+// Check validity of TLS certificates or not.
 const check_certificates = false;
 
-// Timeout on connections (milliseconds)
+// Timeout on connections (connect, idle time) (milliseconds)
 const timeout = 10000;
 
 // Greeting to look for.
@@ -40,6 +40,8 @@ const greeting = 'NOTICE AUTH';
 // Whether to log verbosely (such as successes).
 const verbose = true;
 
+// End settings section.
+
 const dns = require('dns');
 const net = require('net');
 const tls = require('tls');
@@ -47,6 +49,9 @@ const tls = require('tls');
 // Track hosts we report errors on. This is so we do so only once.
 const hosts_reported = [];
 
+// Report that the service is down.
+//
+// id may be a hostname or an IP. why is a reason to include.
 const service_is_down = function(id, why) {
 	for (var i = 0; i < hosts_reported.length; i++) {
 		if (hosts_reported[i] === id) {
@@ -59,6 +64,7 @@ const service_is_down = function(id, why) {
 	console.log(id + ": " + why);
 };
 
+// Connect to the IP and check its liveliness.
 const check_ip = function(ip) {
 	const client = net.createConnection({
 		'host': ip,
@@ -120,6 +126,7 @@ const check_ip = function(ip) {
 	});
 };
 
+// Run checks on the configured hostname.
 const check_host = function() {
 	dns.lookup(hostname,
 	 	{
@@ -134,7 +141,7 @@ const check_host = function() {
 
 			// ips is an array of objects, each with property address and family.
 			for (var i = 0; i < ips.length; i++) {
-				var ip = ips[i].address;
+				const ip = ips[i].address;
 				check_ip(ip);
 			}
 		}
