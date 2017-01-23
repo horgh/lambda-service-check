@@ -13,10 +13,9 @@ any TLS-supporting service that sends a greeting to clients.
 
 
 # Setup
-  * Create an AWS account, an SNS topic (get its ARN), and an
-     [execution
-     role](http://docs.aws.amazon.com/lambda/latest/dg/with-sns-example-create-iam-role.html
-     (get its ARN).
+  * Create an AWS account, an SNS topic (get its ARN), and an [execution
+    role](http://docs.aws.amazon.com/lambda/latest/dg/with-sns-example-create-iam-role.html)
+    (get its ARN).
   * The Execution role should have these policies:
     * `AWSLambdaBasicExecutionRole` (to be able to log)
     * `AmazonSNSFullAccess` (to be able to publish to SNS). You can be more fine
