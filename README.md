@@ -8,8 +8,8 @@ associated with the hostname. It establishes a TLS session and looks for the
 greeting you define. If any of this fails, it reports the host/IP as down. If it
 succeeds, it considers the service alive and well.
 
-I wrote it to monitor for IRC server outages. In theory it will be usable for
-any TLS-supporting service that sends a greeting to clients.
+I wrote it to monitor for IRC server outages. In theory it is usable for any
+TLS-supporting service that sends a greeting to clients.
 
 
 # Setup
@@ -36,5 +36,5 @@ any TLS-supporting service that sends a greeting to clients.
 
 # Why AWS Lambda?
 I want to schedule this Lambda function to run periodically, similarly to cron.
-I found that while [GCP Cloud Functions](https://cloud.google.com/functions/)
+I found that while [GC Cloud Functions](https://cloud.google.com/functions/)
 have similarities to Lambda, there is no way currently to schedule functions.
