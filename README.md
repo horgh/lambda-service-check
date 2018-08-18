@@ -27,7 +27,8 @@ TLS-supporting service that sends a greeting to clients.
     console.
     * Select blank function (custom).
     * Make the trigger a CloudWatch Events - Schedule trigger.
-    * Choose runtime Node.js 4.3
+    * Choose the most recent Node.js runtime. At the time of writing this
+      is 8.10.
     * Set handler to `lambda-service-check.handler`.
     * Choose the role to be the execution role you created.
     * Upload zip file.
