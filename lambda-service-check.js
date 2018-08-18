@@ -74,12 +74,19 @@ const service_is_down = function(sns_arn, id, why) {
 };
 
 // Connect to the IP and check its liveliness.
-const check_ip = function(ip, port, check_certificates, timeout, greeting,
-	verbose, sns_arn) {
+const check_ip = function(
+	hostname,
+	ip,
+	port,
+	check_certificates,
+	timeout,
+	greeting,
+	verbose,
+	sns_arn
+) {
 	const client = net.createConnection({
-		'host':               ip,
-		'port':               port,
-		'rejectUnauthorized': check_certificates
+		'host': ip,
+		'port': port
 	});
 
 	client.setTimeout(timeout);
@@ -96,8 +103,8 @@ const check_ip = function(ip, port, check_certificates, timeout, greeting,
 	});
 
 	client.on('connect', function() {
-		connect_tls_and_get_greeting(ip, client, check_certificates, greeting,
-			verbose, sns_arn);
+		connect_tls_and_get_greeting(hostname, ip, client, check_certificates,
+			greeting, verbose, sns_arn);
 	});
 
 	client.on('error', function(err) {
@@ -112,9 +119,17 @@ const check_ip = function(ip, port, check_certificates, timeout, greeting,
 };
 
 // Setup a TLS session on the given socket. Try to retrieve the greeting.
-const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
-	greeting, verbose, sns_arn) {
+const connect_tls_and_get_greeting = function(
+	hostname,
+	ip,
+	socket,
+	check_certificates,
+	greeting,
+	verbose,
+	sns_arn
+) {
 	const client = tls.connect({
+		host:                 hostname,
 		'socket':             socket,
 		'rejectUnauthorized': check_certificates
 	});
@@ -181,8 +196,8 @@ const check_host = function(
 
 			for (var i = 0; i < ips.length; i++) {
 				const ip = ips[i].address;
-				check_ip(ip, port, check_certificates, timeout, greeting, verbose,
-					sns_arn);
+				check_ip(hostname, ip, port, check_certificates, timeout, greeting,
+					verbose, sns_arn);
 				checked_ips.push(ip);
 			}
 
