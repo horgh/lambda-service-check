@@ -155,8 +155,17 @@ const connect_tls_and_get_greeting = function(ip, socket, check_certificates,
 };
 
 // Run checks on the configured hostname.
-const check_host = function(hostname, port, check_certificates, timeout,
-	greeting, verbose, sns_arn) {
+const check_host = function(
+	hostname,
+	port,
+	check_certificates,
+	timeout,
+	greeting,
+	verbose,
+	sns_arn,
+	callback)
+{
+	var checked_ips = [];
 	dns.lookup(hostname,
 	 	{
 			'family': 4,
@@ -174,7 +183,14 @@ const check_host = function(hostname, port, check_certificates, timeout,
 				const ip = ips[i].address;
 				check_ip(ip, port, check_certificates, timeout, greeting, verbose,
 					sns_arn);
+				checked_ips.push(ip);
 			}
+
+			callback(null, {
+				checked_ips: checked_ips,
+				hostname:    config.hostname,
+				port:        config.port
+			});
 		}
 	);
 };
@@ -182,10 +198,14 @@ const check_host = function(hostname, port, check_certificates, timeout,
 // Lambda handler function.
 exports.handler = function(event, context, callback) {
 	check_host(config.hostname, config.port, config.check_certificates,
-		config.timeout, config.greeting, config.verbose, config.sns_arn);
+		config.timeout, config.greeting, config.verbose, config.sns_arn,
+		callback);
 };
 
 if (config.run_locally) {
 	check_host(config.hostname, config.port, config.check_certificates,
-		config.timeout, config.greeting, config.verbose, config.sns_arn);
+		config.timeout, config.greeting, config.verbose, config.sns_arn,
+		function(err, result) {
+			console.log(JSON.stringify(result));
+		});
 }
