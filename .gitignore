@@ -1,0 +1,4 @@
+*.swp
+/build
+/config.js
+/package.zip
