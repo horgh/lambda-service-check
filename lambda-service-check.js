@@ -163,8 +163,8 @@ const check_host = function(
 	greeting,
 	verbose,
 	sns_arn,
-	callback)
-{
+	callback
+) {
 	var checked_ips = [];
 	dns.lookup(hostname,
 	 	{
